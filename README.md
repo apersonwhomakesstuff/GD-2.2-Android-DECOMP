@@ -89,14 +89,45 @@ TEST(GJBaseGameLayer, AreaMove) {
 
 ## 📈 Progress
 
-- [x] GameObject class structure
-- [x] Virtual method analysis
-- [x] GJBaseGameLayer destructor
-- [x] Area move group action
-- [ ] Complete vtable reconstruction
-- [ ] All EnterEffect types
-- [ ] PlayLayer specific methods
-- [ ] EditorLayer implementation
+### 🧱 Tier 1: Layout & Lifetime (stable for modding)
+- [x] GameObject class structure (binary-accurate offsets)
+- [x] GameObject destructor (verified ARM64 behavior)
+- [x] PlayerObject destructor and resource cleanup
+- [x] Physics table (lookup + insertion logic)
+- [x] GJEffectManager structure and destructor (full container map)
+- [x] Core containers (vectors, maps, trees, linked lists)
+- [x] Update list and group state tracking
+
+---
+
+### ⚙️ Tier 2: Behavior (implemented or verified)
+- [x] Player creation logic (single + dual mode)
+- [x] Virtual method analysis (vtable call sites mapped)
+- [x] Area move group action (all modes, easing, force application)
+- [x] Enter effect state tracking and group linking
+- [x] Force multiplier system (per-group)
+- [x] Event link/unlink logic
+- [x] Song trigger management
+- [x] Object flag and state propagation
+
+---
+
+### 🚧 Tier 3: Mapped but incomplete
+- [ ] Complete vtable reconstruction (layout known, bodies WIP)
+- [ ] All EnterEffect types (some mapped, some stubbed)
+- [ ] Effect timeline scheduling
+- [ ] Trigger delay / repeat chains
+- [ ] Track system runtime behavior
+- [ ] Directional force submodes (edge cases)
+
+---
+
+### 🏗️ Tier 4: Not started (but mapped in disassembly)
+- [ ] PlayLayer runtime loop and tick processing
+- [ ] EditorLayer behavior and UI hooks
+- [ ] Level reset and checkpoint rebuild logic
+- [ ] Full trigger execution pipeline
+- [ ] Multiplayer / practice mode divergences
 
 ## 🤝 Contributing
 
