@@ -18,6 +18,7 @@
 // - GJBaseGameLayer.cpp / .hpp: core layer logic (player creation, effects).
 // - GJEffectManager.cpp / .hpp: effect manager destructor and containers.
 // - GameObject.cpp / .hpp: GameObject destructor and cleanup.
+// - GameLevelManager.cpp / .hpp: local level lookups and username caching.
 // - LevelEditorLayer.cpp / .hpp: editor layer interface outline.
 // - PlayerObject.cpp / .hpp: PlayerObject destructor and cleanup.
 // - SimplePlayer.cpp / .hpp: SimplePlayer destructor and cleanup.
