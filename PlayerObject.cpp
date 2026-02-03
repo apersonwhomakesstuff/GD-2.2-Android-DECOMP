@@ -1,3 +1,6 @@
+#include "main.hpp"
+#include "PlayerObject.hpp"
+
 class PlayerObject : public GameObject {
 public:
     virtual ~PlayerObject() {

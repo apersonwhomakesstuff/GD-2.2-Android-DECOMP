@@ -1,9 +1,8 @@
+#include "main.hpp"
+#include "GameObject.hpp"
 #include "GameObject.h"
 #include "CCSpritePlus.h"
 #include "cocos2d.h"
-#include <vector>
-#include <string>
-#include <unordered_map>
 
 // ==============================================
 // GAMEOBJECT DESTRUCTOR - FULL IMPLEMENTATION

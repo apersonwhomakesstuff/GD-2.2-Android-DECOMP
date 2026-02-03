@@ -1,3 +1,6 @@
+#include "main.hpp"
+#include "LevelEditorLayer.hpp"
+
 // ==============================================
 // MASSIVE LevelEditorLayer.h - 2000+ LINES!
 // ==============================================
@@ -30,10 +33,6 @@
 #include "CloudSaveManager.h"
 #include "BackupManager.h"
 
-#include <vector>
-#include <unordered_map>
-#include <map>
-#include <set>
 #include <queue>
 #include <stack>
 #include <functional>
