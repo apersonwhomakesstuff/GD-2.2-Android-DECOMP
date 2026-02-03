@@ -1,134 +1,225 @@
-#include "main.hpp"
+// PlayerObject.cpp
 #include "PlayerObject.hpp"
+#include "GameManager.hpp"
 
-class PlayerObject : public GameObject {
-public:
-    virtual ~PlayerObject() {
-        // Stack canary protection
-        long stackGuard = __stack_chk_guard;
-        
-        // ===== STEP 1: VTABLE SETUP =====
-        // Set vtable pointers (inherited from GameObject)
-        this->vtable = &PlayerObject::vtable_start;           // +0x0
-        this->vtable_offset_0x140 = &PlayerObject::setColor;  // +0x140
-        this->vtable_offset_0x158 = &PlayerObject::setBlendFunc; // +0x158
-        this->vtable_offset_0x538 = &PlayerObject::data_0x538; // +0x538
-        
-        // ===== STEP 2: CLEAN UP PARTICLE ARRAYS =====
-        // Release all particles in m_particleArray (+0x678)
-        CCArray* particleArray = m_particleArray;
-        if (particleArray) {
-            // Call release() on each particle
-            for (int i = 0; i < particleArray->count(); i++) {
-                CCObject* particle = particleArray->objectAtIndex(i);
-                if (particle) {
-                    particle->release();
-                }
-            }
-            particleArray->release();  // Release the array itself
-        }
-        
-        // ===== STEP 3: RELEASE CCOBJECT POINTERS =====
-        // Release all CCObject references
-        if (m_pointer_0x598) m_pointer_0x598->release();
-        if (m_pointer_0x5a0) m_pointer_0x5a0->release();
-        if (m_pointer_0x5a8) m_pointer_0x5a8->release();
-        if (m_pointer_0x5b0) m_pointer_0x5b0->release();
-        if (m_pointer_0x590) m_pointer_0x590->release();
-        if (m_pointer_0xa08) m_pointer_0xa08->release();
-        if (m_pointer_0xc20) m_pointer_0xc20->release();
-        if (m_pointer_0xbe8) m_pointer_0xbe8->release();
-        if (m_pointer_0xbf0) m_pointer_0xbf0->release();
-        
-        // ===== STEP 4: UNLOAD PLAYER ICONS =====
-        GameManager* gm = GameManager::sharedState();
-        gm->unloadIcons(m_iconID);  // +0xbe4
-        
-        // ===== STEP 5: CLEAN UP CONTAINERS =====
-        // Release some ref-counted object at +0xbd8
-        // (Has reference counting with atomic operations)
-        
-        // Delete red-black tree at +0xbb0
-        deleteRedBlackTree(m_rbTree_0xbb0);
-        
-        // Delete another red-black tree at +0xb70
-        deleteRedBlackTree(m_rbTree_0xb70);
-        
-        // Delete hash table at +0xa88
-        deleteHashTable(m_hashTable_0xa88);
-        
-        // ===== STEP 6: DESTROY HASHTABLES =====
-        // Destroy various hashtables
-        m_hashtable_0xa10.~Hashtable();
-        m_hashtable_0x820.~Hashtable();
-        m_hashtable_0x6c0.~Hashtable();
-        m_hashtable_0x688.~Hashtable();
-        
-        // ===== STEP 7: CALL PARENT DESTRUCTOR =====
-        GameObject::~GameObject();
-        
-        // ===== STEP 8: STACK CHECK =====
-        if (stackGuard != __stack_chk_guard) {
-            __stack_chk_fail();
-        }
-    }
-    
-    // Destructor for delete operator
-    virtual ~PlayerObject() {
-        // Calls the real destructor then operator delete
-        this->~PlayerObject();
-        operator delete(this);
-    }
-
-private:
-    // Member offsets from assembly:
-    CCArray* m_particleArray;      // +0x678
-    CCObject* m_pointer_0x598;     // +0x598
-    CCObject* m_pointer_0x5a0;     // +0x5a0
-    CCObject* m_pointer_0x5a8;     // +0x5a8
-    CCObject* m_pointer_0x5b0;     // +0x5b0
-    CCObject* m_pointer_0x590;     // +0x590
-    CCObject* m_pointer_0xa08;     // +0xa08
-    CCObject* m_pointer_0xc20;     // +0xc20
-    CCObject* m_pointer_0xbe8;     // +0xbe8
-    CCObject* m_pointer_0xbf0;     // +0xbf0
-    
-    int m_iconID;                  // +0xbe4
-    CCObject* m_refCountedObject;  // +0xbd8 (with atomic ref counting)
-    
-    // Containers
-    std::_Rb_tree<> m_rbTree_0xbb0;  // Red-black tree
-    std::_Rb_tree<> m_rbTree_0xb70;  // Another red-black tree
-    void* m_hashTable_0xa88;         // Hash table pointer
-    
-    // More hashtables (in-place)
-    std::_Hashtable<> m_hashtable_0xa10;
-    std::_Hashtable<> m_hashtable_0x820;
-    std::_Hashtable<> m_hashtable_0x6c0;
-    std::_Hashtable<> m_hashtable_0x688;
-    
-    // Vtable offsets
-    void* vtable_offset_0x140;      // setColor function
-    void* vtable_offset_0x158;      // setBlendFunc function
-    void* vtable_offset_0x538;      // Some data pointer
-};
-
-// Helper functions
-void deleteRedBlackTree(std::_Rb_tree<>& tree) {
-    // Recursively delete nodes
-    auto deleteNode = [&](auto node, auto deleteFunc) {
-        if (!node) return;
-        deleteNode(node->left, deleteFunc);
-        deleteNode(node->right, deleteFunc);
-        deleteFunc(node);
-    };
-    
-    deleteNode(tree.root(), [](auto node) { delete node; });
+PlayerObject::PlayerObject() {
+    // Initialize all members to zero/false
+    memset(reinterpret_cast<void*>(this), 0, sizeof(PlayerObject));
 }
 
-void deleteHashTable(void* table) {
-    if (table) {
-        // Hash table cleanup logic
-        operator delete(table);
+PlayerObject::~PlayerObject() {
+    // Call base destructor first
+    GameObject::~GameObject();
+
+    // Release owned arrays
+    if (m_slopeObjects) {
+        m_slopeObjects->release();
+        m_slopeObjects = nullptr;
     }
+    if (m_touchingObjects) {
+        m_touchingObjects->release();
+        m_touchingObjects = nullptr;
+    }
+    if (m_activeParticles) {
+        m_activeParticles->release();
+        m_activeParticles = nullptr;
+    }
+
+    // Delete checkpoint data if not globally managed
+    uintptr_t globalSentinel = *(uintptr_t*)((uintptr_t)cocos2d::CCDirector::sharedDirector() + 0xfe8);
+    if (m_checkpointData && (uintptr_t(m_checkpointData) - 0x18) != globalSentinel) {
+        delete[] reinterpret_cast<char*>(uintptr_t(m_checkpointData) - 0x18);
+        m_checkpointData = nullptr;
+    }
+}
+
+PlayerObject* PlayerObject::create(int playerID, int iconID, GJBaseGameLayer* layer, cocos2d::CCLayer* camera, bool isDual) {
+    auto* player = new PlayerObject();
+    if (player && player->init(playerID, iconID, layer, camera, isDual)) {
+        player->autorelease();
+        return player;
+    }
+    delete player;
+    return nullptr;
+}
+
+// --- Core Methods (Representative Samples) ---
+
+void PlayerObject::bumpPlayer(float yVel, int type, bool force, GameObject* obj) {
+    if (m_isDashing) return;
+    if (m_isPlatformer && type == 0x2c) {
+        propellPlayer(type);
+        return;
+    }
+    if (m_isSpider) {
+        // Spider logic
+        setYVelocity(-yVel);
+        return;
+    }
+    // Standard bump
+    setYVelocity(yVel);
+}
+
+void PlayerObject::ringJump(GameObject* obj) {
+    if (m_isFlying) return;
+    if (m_isDashing) return;
+    setYVelocity(1.0f); // Approximate
+    m_isFlying = true;
+}
+
+int PlayerObject::flipMod(int value) {
+    return ((value % 2) + 2) % 2;
+}
+
+bool PlayerObject::isFlying() {
+    return m_isFlying;
+}
+
+bool PlayerObject::isInBasicMode() {
+    return !m_isShip && !m_isBall && !m_isSpider && !m_isSwing;
+}
+
+bool PlayerObject::isSafeMode() {
+    return GameManager::sharedState()->m_safeMode;
+}
+
+void PlayerObject::setYVelocity(double vel) {
+    m_yVelocity = static_cast<float>(vel);
+}
+
+void PlayerObject::addToYVelocity(double delta) {
+    m_yVelocity += static_cast<float>(delta);
+}
+
+void PlayerObject::flipGravity(PlayerButton dir) {
+    m_gravity = (m_gravity == 1) ? -1 : 1;
+    m_isUpsideDown = !m_isUpsideDown;
+}
+
+// --- Collision Methods ---
+
+void PlayerObject::collidedWithObject(float yDelta, GameObject* obj, const cocos2d::CCRect& rect, bool fromTop) {
+    if (obj->m_objectType == 1810) { // Ring
+        ringJump(obj);
+        return;
+    }
+    if (fromTop) {
+        m_isOnGround = true;
+        m_isFlying = false;
+        m_yVelocity = 0;
+    }
+}
+
+void PlayerObject::preSlopeCollision(float yDelta, GameObject* obj) {
+    // Handle slope logic
+    float slopeY = slopeYPos(obj);
+    m_lastSafeY = slopeY;
+}
+
+float PlayerObject::slopeYPos(GameObject* other) {
+    // Simplified: return average Y of object rect
+    return other->getPositionY();
+}
+
+bool PlayerObject::isFacingDown() {
+    return m_gravity == -1;
+}
+
+// --- Input Methods ---
+
+void PlayerObject::pushButton(PlayerButton button) {
+    if (m_controlsLocked) return;
+    switch (button) {
+        case PlayerButton::Jump:
+            if (!m_isFlying) {
+                setYVelocity(1.0f);
+                m_isFlying = true;
+            }
+            break;
+        default: break;
+    }
+}
+
+void PlayerObject::releaseButton(PlayerButton button) {
+    // No-op for jump; handled on press
+}
+
+void PlayerObject::releaseAllButtons() {
+    m_hasJustJumped = false;
+}
+
+void PlayerObject::enablePlayerControls() {
+    m_controlsLocked = false;
+}
+
+void PlayerObject::disablePlayerControls() {
+    m_controlsLocked = true;
+    releaseAllButtons();
+}
+
+void PlayerObject::lockPlayer() {
+    if (!m_hasJustJumped) {
+        m_hasJustJumped = true;
+        // Fade out streak, etc.
+    }
+}
+
+// --- Particles ---
+
+void PlayerObject::setupStreak() {
+    if (!m_streak) {
+        m_streak = cocos2d::CCParticleSystemQuad::create("playerStreak.plist");
+        if (m_streak) {
+            m_streak->retain();
+            m_playerSprite->addChild(m_streak);
+        }
+    }
+}
+
+void PlayerObject::placeStreakPoint() {
+    if (m_streak) {
+        m_streak->resetSystem();
+    }
+}
+
+void PlayerObject::fadeOutStreak2() {
+    if (m_streak) {
+        m_streak->stopSystem();
+    }
+}
+
+void PlayerObject::deactivateParticle(cocos2d::CCParticleSystem* particle) {
+    if (particle) {
+        particle->stopSystem();
+    }
+}
+
+// --- Checkpoints ---
+
+void PlayerObject::loadFromCheckpoint(void* checkpoint) {
+    // Restore position, velocity, mode, etc.
+    // Full implementation would deserialize all fields
+}
+
+// --- Utility ---
+
+void PlayerObject::resetCollisionLog() {
+    m_collisionLog.clear();
+}
+
+void PlayerObject::animatePlatformerJump() {
+    // Play jump animation
+}
+
+void PlayerObject::runRotateAction(bool clockwise, float duration) {
+    auto rotate = cocos2d::CCRotateBy::create(duration, clockwise ? 360 : -360);
+    m_playerSprite->runAction(rotate);
+}
+
+void PlayerObject::showEndAnimation() {
+    // Trigger death or finish animation
+}
+
+void PlayerObject::touchedObject(GameObject* obj) {
+    // Handle touch logic (e.g., orbs, pads)
 }
