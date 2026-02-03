@@ -1,3 +1,5 @@
+#include "main.hpp"
+#include "SimplePlayer.hpp"
 #include "SimplePlayer.h"
 #include "GameManager.h"
 #include "cocos2d.h"

@@ -1,3 +1,5 @@
+#include "main.hpp"
+#include "getGameObjectPhysics.hpp"
 #include "GJGameState.h"
 #include "GameObject.h"
 #include "cocos2d.h"

@@ -1,3 +1,5 @@
+#include "main.hpp"
+#include "GJEffectManager.hpp"
 #include "GJEffectManager.h"
 #include "GroupCommandObject2.h"
 #include <unordered_map>
